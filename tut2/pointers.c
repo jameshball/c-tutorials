@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 char *create_command(size_t size) {
   char *command = calloc(size, sizeof(char));
-
-  if (command == NULL) {
-    printf("Memory not allocated.");
-    exit(EXIT_FAILURE);
-  }
+  
+  assert(command != NULL && "Cannot have NULL pointer.");
 
   return command;
 }
@@ -15,10 +13,7 @@ char *create_command(size_t size) {
 char **create_commands(int n) {
   char **commands = calloc(n, sizeof(char*));
 
-  if (commands == NULL) {
-    printf("Memory not allocated.");
-    exit(EXIT_FAILURE);
-  }
+  assert(commands != NULL && "Cannot have NULL pointer.");
 
   for (int i = 0; i < n; i++) {
     commands[i] = NULL;
@@ -61,8 +56,8 @@ void free_commands(char **commands, int n) {
 
 int main(int argc, char **argv) {
   int n;
-  sscanf(argv[1], "%d", &n);
   size_t size;
+  sscanf(argv[1], "%d", &n);
   sscanf(argv[2], "%lu", &size);
 
   char **commands = get_commands(n, size);
