@@ -2,11 +2,23 @@
 #include <stdlib.h>
 
 char *create_command(size_t size) {
-  return (char*) calloc(size, sizeof(char));
+  char *command = calloc(size, sizeof(char));
+
+  if (command == NULL) {
+    printf("Memory not allocated.");
+    exit(EXIT_FAILURE);
+  }
+
+  return command;
 }
 
 char **create_commands(int n) {
   char **commands = calloc(n, sizeof(char*));
+
+  if (commands == NULL) {
+    printf("Memory not allocated.");
+    exit(EXIT_FAILURE);
+  }
 
   for (int i = 0; i < n; i++) {
     commands[i] = NULL;
