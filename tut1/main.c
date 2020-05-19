@@ -41,7 +41,7 @@ int white_score(int guess[GUESS_LENGTH], int code[GUESS_LENGTH]) {
         score++;
       }
     }
-  } 
+  }
 
   return score;
 }
@@ -68,7 +68,7 @@ int main(void) {
         return 0;
       }
     }
-  }  
+  }
 
   return 0;
 }
