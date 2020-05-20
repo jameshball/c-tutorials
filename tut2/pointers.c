@@ -25,7 +25,7 @@ char **create_commands(int n) {
 char *get_command(size_t size) {
   printf("> ");
   char *command = create_command(size);
-  scanf("%s", command);
+  fgets(command, size, stdin);
 
   return command;
 }
@@ -42,7 +42,7 @@ char **get_commands(int n, size_t size) {
 
 void print_commands(char **commands, int n) {
   for (int i = 0; i < n; i++) {
-    printf("%s\n", commands[i]);
+    printf("%s", commands[i]);
   }
 }
 
