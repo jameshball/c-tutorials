@@ -1,0 +1,82 @@
+This is the 04.intlist-with-lib example, but converted to use CMake to
+generate the Makefiles for us (one in this top-level directory, the other
+in the "lib" subdirectory).  This shows how CMake handles subdirectories too.
+
+Note that CMake is theoretically portable to Windows and Macs as well, although
+I've never tried that:-)
+
+Getting Started
+===============
+
+- In this top-level directory, you'll see a CMakeLists.txt file as follows:
+
+	cmake_minimum_required(VERSION 2.6)
+	project(list_example)
+
+	set(CMAKE_C_FLAGS "-Wall")
+	set(CMAKE_BUILD_TYPE Debug)
+
+	add_subdirectory(lib)
+	include_directories(lib)
+
+	add_executable(avgwordlen avgwordlen.c)
+	target_link_libraries(avgwordlen intlist)
+
+- In the lib directory, there's a 3-line lib/CMakeLists.txt file:
+
+	add_library(intlist intlist.c)
+	add_executable(testlist testlist.c)
+	target_link_libraries(testlist intlist)
+
+- add_library( LIBNAME, SOURCEFILES ) creates the named library to be built
+  from the given source files.  In particular, 
+	add_library(intlist intlist.c)
+  causes the library "intlist" to be built from intlist.c.  The library name
+  "intlist" could be replaced with anything you like, it doesn't have to be
+  the module name or the directory name.  The generated library will be
+  called "libintlist.a" on Unix, something else on Windows or Macs.
+
+- add_executable( EXECNAME, SOURCEFILES ) [in either CMakeLists.txt file]
+  tells CMake that EXECNAME should be built from the following source files.
+  So, in particular:
+	add_executable(testlist testlist.c)
+  (says that testlist.c should be compiled to give testlist), and
+  the top-level CMakeLists.txt line:
+	add_executable(avgwordlen avgwordlen.c)
+  causes avgwordlen.c to be compiled and linked to give avgwordlen.
+
+- additional named libraries are also linked into executables via:
+	target_link_libraries( EXECNAME LIBNAMES )
+  So, in particular:
+	target_link_libraries(avgwordlen intlist)
+	target_link_libraries(testlist intlist)
+  cause the library called "intlist" (aka the file "libintlist.a") to
+  be linked into avgwordlen (in the top-level directory) and linked into
+  testlist (in the lib subdirectory).
+
+- In the top-level CMakeLists.txt file, we tell CMake to look in another
+  directory via:
+	add_subdirectory(DIRNAME..)
+- and CMake can be told to add a -I(DIRNAME) to all compilations via:
+	include_subdirectories(DIRNAME..)
+
+
+Building Software using CMake
+=============================
+
+CMake is quite a messy tool.  Keep things clean via:
+
+mkdir build
+cd build
+
+Then tell CMake to generate Makefiles here by:
+
+cmake ..
+
+Then tell Make (as usual) to compile and link everything by:
+
+make
+
+This tactic keeps the pristine source code (and CMakeLists.txt files) in the
+parent directory, and puts only CMake's junk - and the executables and
+libraries that are constructed - into the "build" directory.

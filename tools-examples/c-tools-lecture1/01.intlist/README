@@ -1,0 +1,37 @@
+- This is the first Make example in the lecture
+
+- a multi-module project comprising a list-of-integers module
+  (intlist.c and intlist.h), a test program (testlist.c),
+  a real main program (avgwordlen.c) and a set of
+  shared definitions in defns.h
+
+- the Makefile is exactly as shown in the lecture,
+  and enables you to compile the programs using:
+
+- make, which compiles intlist.c, testlist.c and avgwordlen.c
+  and then links testlist and avgwordlen (with the list module)
+
+- if you make again, nothing happens (make does minimum work!)
+
+- if you simulate intlist.c changing (touch intlist.c) then
+  make will recompile intlist.c and then relink both main programs.
+
+- if you touch intlist.h then make has to recompile everything
+  because the interface has changed and everything depends on it
+  directly (includes) or indirectly.
+
+- nb: avgwordlen is just an example of using intlists, but if you're
+  interested in what it actually does: it reads the Linux word list
+  (/usr/share/dict/words), builds a list of the lengths of each word,
+  counts the number of words, and then iterates over the list, summing
+  all the integer lengths.  Then print out the total sum, the number of
+  words, and the average word length of all words in the wordlist.
+
+- To check that the output is correct:
+
+  count number of lines == words in this case:
+    wc -l /usr/share/dict/words
+  compute the average word length in 'awk' printing the average:
+    awk '{n++; t+=length($1);} END {print t/n}' < /usr/share/dict/words
+  or the same in Perl
+    perl -nle '$n++; $t+=length($_); END {print $t/$n}' < /usr/share/dict/words

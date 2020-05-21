@@ -1,0 +1,35 @@
+- In this version of the intlist + avgwrdlen example, the
+  list-of-integers module (intlist.c and intlist.h) and
+  it's test program (testlist.c) have been moved into the lib
+  directory and made into a library - with it's own Makefile.
+
+- the Makefile in the lib directory builds two things:
+  	- the executable testlist for us to test that intlist works
+	  (note that the executable is generated in lib, i.e. run lib/testlist)
+	- the library libintlist.a containing intlist.o
+
+- all that remains in this top level directory is the real main
+  program (avgwordlen.c), a set of shared definitions in defns.h,
+  and a Makefile that tells the C compiler to search for includes
+  in the lib directory (-Ilib in CFLAGS), and to search for libraries
+  in the lib directory (-Llib in LDLIBS), and to link libintlist.a in
+  (-lintlist also in LDLIBS).
+
+- note that dependendencies on intlist.h have completely gone.
+
+- note that I've added a "libs" target to run make in lib (cd lib; make),
+  and described libs as a target to build in BUILD.  no file called
+  "libs" is ever built, so make will always run the "cd lib; make" action,
+  however that inner make will do no work if everything's up to date
+  in the libs directory.
+
+- note also that the "clean" target cleans in the lib directory as well.
+
+- so, to build, as before, type 'make' and you'll notice it first cd into
+  lib and run make there - compiling intlist.c, testintlist.c, linking
+  them together and then creating libintlist.a via ar.
+
+- but still, libintlist.a is a solid part of this codebase.  What if we
+  wanted to split libintlist completely from applications like avgwordlen
+  that happened to USE libintlist?  see 05.libintlist and 06.avgwordlen
+  for that..

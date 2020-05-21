@@ -1,0 +1,16 @@
+- here we have my second attempt at building a tool to build Makefiles for
+  simple C projects, dating to 2016, written in Perl this time,
+  also called mfbuild.
+
+- it works just like the C version did way back in the 1990s, by determining
+  which local .h files are included in a single main program, and assuming
+  that if fred.h is included, and fred.c also exists, then they form a
+  single 2-part module called fred, and hence fred.c should be analysed
+  for which local .h files it includes, and fred.o will need to be linked
+  with the main program, and so on.
+
+- install it into TOOLDIR/bin by 'make install', complete with man page and
+  standard all-project definitions
+
+- note that there's little point in having both the c-version and this
+  perl-version installed.  Pick one:-)

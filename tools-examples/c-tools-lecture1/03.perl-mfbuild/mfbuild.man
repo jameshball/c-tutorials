@@ -1,0 +1,43 @@
+.nr X
+.TH mfbuild 1 "14 Oct 1995"
+.SH NAME
+mfbuild \- construct a Makefile for a C program
+.SH SYNOPSIS
+.B mfbuild
+.I program_name
+
+.SH DESCRIPTION
+Given the name of a main C source file (ie. one containing function
+main),
+.B mfbuild
+constructs a Makefile for that C program, which includes rules for that
+C source file and any other related modules in the same directory.
+.LP
+.B mfbuild
+operates by searching the C source file for #include "name.h" lines, and then
+attempting to locate corresponding
+.B "name.c"
+files and analysing them in turn.
+.LP
+If present,
+.B mfbuild
+will first include the contents of a file called
+.B mfbuilddefs
+(either in the current directory or in $HOME/c-tools/lib).
+
+.SH FILES
+.TP 20
+.B mfbuilddefs
+(in the current directory) - per-project definitions incorporated into
+the top of the Makefile.
+.TP
+.B $HOME/c-tools/lib/mfbuilddefs
+all-project definitions for the top of each generated Makefile.
+.TP
+.B Makefile
+generated Unix makefile.
+
+.PD
+.SH SEE ALSO
+.BR make (1)
+.LP

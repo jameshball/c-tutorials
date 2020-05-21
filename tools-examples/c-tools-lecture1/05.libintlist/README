@@ -1,0 +1,15 @@
+- here, the list-of-integers module (intlist.c and intlist.h) and
+  it's test program (testlist.c) have been entirely separated from
+  applications (eg. the avgwordlen program) that USE intlists.  In
+  other words, this is just the contents of the "lib" directory
+  from the previous version, with a modified Makefile.
+
+- The Makefile builds two things:
+  	- the executable testlist for us to test that intlist works
+	- the library libintlist.a containing intlist.o, using ar.
+
+- now, the Makefile has a new "install" target, to install the library
+  in the TOOLDIR/lib/ARCH directory, and intlist.h into TOOLDIR/include.
+
+- look in 06.avgwordlen-only for the avgwordlen program, set to build
+  against the intlist library installed in c-tools.

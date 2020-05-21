@@ -1,0 +1,16 @@
+- Now that we've placed the list-of-integers module (intlist.c and intlist.h)
+  into the c-tools library (see 05.libintlist), this directory contains
+  the real main program (avgwordlen.c), a set of shared definitions in defns.h,
+  and a Makefile that tells the C compiler to search for includes
+  in the c-tools include directory (-I... in CFLAGS), and to search for
+  libraries in the c-tools lib directory (-L... in LDLIBS), and to link
+  libintlist.a in (-lintlist also in LDLIBS).
+
+- note that the "libs" target has now disappeared entirely, as has the
+  clean target "spotless", and of course the "testlist" test utility.
+
+- so, to build as always, type 'make' and you'll notice that it only
+  compiles avgwordlen.c and then links it together with -lintlist.
+
+- full separation has now been achieved: our c-tools library permanently
+  contains the intlist ADT, for us to reuse in other apps whenever we like.

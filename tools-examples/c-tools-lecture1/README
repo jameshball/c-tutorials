@@ -1,0 +1,66 @@
+C Tools Lecture 1 Materials
+
+- to prepare, in this directory
+	make mkdir
+
+- see what that has created by:
+	find ~/c-tools
+
+- then edit your ~/.bashrc and add, at the bottom:
+
+export TOOLDIR=$HOME/c-tools
+export PATH="$TOOLDIR/bin:$TOOLDIR/bin/$ARCH:$PATH"
+export MANPATH=${MANPATH}:$TOOLDIR/man
+
+  then run it (. ~/.bashrc)
+
+Then sequence through the following directories,
+following the instructions in each directory's README.
+
+- 01.intlist
+	- this is the make example
+	- details in 01.intlist's README,
+	  explore it as much as you like.
+
+- 02.c-mfbuild
+	- for those interested, here's my first attempt at building
+	  a tool to build Makefiles for simple C projects, written
+	  in C, dating to the late 1990s, called mfbuild.
+
+- 03.perl-mbuild
+	- for those interested, here's my second attempt at building
+	  a tool to build Makefiles for simple C projects,
+	  dating to 2016, written in Perl this time, also called mfbuild.
+
+- 04.intlist-with-lib
+	- this is the 01.intlist example, split into a separate library
+	  directory called lib (containing the intlist module and it's
+	  test program), and the top level directory (containing the
+	  avgwordlen main program and a Makefile to build the library,
+	  include it and link to it.
+
+- 05.libintlist
+	- here, the list-of-integers module (intlist.c and intlist.h) and
+	  it's test program (testlist.c) are entirely separated from
+	  applications (eg. the avgwordlen program) that USE intlists.
+	- now, the Makefile has a new "install" target, to install the library
+	  in the TOOLDIR/lib/ARCH directory, and intlist.h into TOOLDIR/include.
+	- once you've gone into this directory and run "make install", your
+	  TOOLDIR library permanently contains the intlist ADT, for us to
+	  reuse in other apps whenever we like.
+
+- 06.avgwordlen-only
+	- this contains the real application program (avgwordlen.c) that uses
+	  intlists from the c-tools library, and a Makefile that tells the C
+	  compiler to look in the library both for includes and libraries,
+	  and specifically to link in -lintlist.
+	- 05.libintlist and 06.avgwordlen-only show how to typically do full
+	  separation: your TOOLDIR library permanently contains the intlist
+	  ADT, for us to reuse in other apps whenever we like.
+
+- 07.intlist-with-cmake
+	- a version of 04.intlist-with-lib using CMake to generate the
+	  Makefiles for us.  The source code is IDENTICAL to
+	  04.intlist-with-lib, the Makefiles have been replaced with
+	  CMakeLists.txt files (and the README has been modified to
+	  explain it).
