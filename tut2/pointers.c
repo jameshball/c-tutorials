@@ -2,16 +2,16 @@
 #include <stdlib.h>
 #include <assert.h>
 
-char *create_command(size_t size) {
-  char *command = calloc(size, sizeof(char));
+char* create_command(size_t size) {
+  char* command = calloc(size, sizeof(char));
   
   assert(command != NULL && "Cannot have NULL pointer.");
 
   return command;
 }
 
-char **create_commands(int n) {
-  char **commands = calloc(n, sizeof(char*));
+char** create_commands(int n) {
+  char** commands = calloc(n, sizeof(char*));
 
   assert(commands != NULL && "Cannot have NULL pointer.");
 
@@ -22,16 +22,16 @@ char **create_commands(int n) {
   return commands;
 }
 
-char *get_command(size_t size) {
+char* get_command(size_t size) {
   printf("> ");
-  char *command = create_command(size);
+  char* command = create_command(size);
   fgets(command, size, stdin);
 
   return command;
 }
 
-char **get_commands(int n, size_t size) {
-  char **commands = create_commands(n);
+char** get_commands(int n, size_t size) {
+  char** commands = create_commands(n);
 
   for (int i = 0; i < n; i++) {
     commands[i] = get_command(size);
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
   sscanf(argv[1], "%d", &n);
   sscanf(argv[2], "%lu", &size);
 
-  char **commands = get_commands(n, size);
+  char** commands = get_commands(n, size);
   print_commands(commands, n);
   free_commands(commands, n);
 }
