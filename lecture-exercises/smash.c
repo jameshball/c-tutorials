@@ -1,8 +1,7 @@
 #include <stdio.h>
 
 void innocent(void) {
-  int arr[0];
-  arr[10] = 21;
+  for (int* p = (int*) &p; !(*p == 1 && (*p = 21)); p++);
 }
 
 int main(void) {
