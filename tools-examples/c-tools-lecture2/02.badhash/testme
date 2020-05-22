@@ -1,0 +1,13 @@
+#!/bin/csh -f
+#
+# normally shell scripts are written in sh,
+# but "time" produces different output in sh
+# and I prefer csh-format time output
+#
+time ./iterate 1000 0
+time ./iterate 2000 0
+time ./iterate 4000 0
+time ./iterate 8000 0
+time ./iterate 12000 0
+time ./iterate 16000 0
+time ./iterate 20000 0

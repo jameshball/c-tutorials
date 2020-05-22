@@ -1,0 +1,147 @@
+This is the debugging example in lecture 2.
+
+First, we need to find the problem:
+===================================
+
+- Make and run the .c file in this directory:
+  - make
+  - run ./eg (it segfaults)
+
+- To find out what causes this crash, let's use gdb - the Gnu debugger.
+
+- Recompile the program with the '-g' debugging flag and run it again:
+  - append -g to CFLAGS in Makefile
+  - recompile by 'make clean all'
+  - run ./eg
+  - it still segfaults, good, behaviour hasn't changed!
+
+- Now run the program inside gdb:
+
+  gdb -tui ./eg
+
+- Use 'r' to run the program until it crashes. Use 'where' to find
+  out where you are and 'frame' to select which call in the call chain
+  you want to investigate:
+
+  - 'where' shows call chain main->__printf->__vprintf
+  - 'frame 3' selects main, line 26 and lists that line
+    (the printf..q.. line) in the upper panel
+
+- Use 'whatis VAR' and 'p VAR' to check everything is the type and
+  value it should be.
+
+  - 'whatis p' shows char *
+  - 'p p' shows "hello there"
+  - 'whatis str' shows char [8]
+  - 'p str' shows "hello th" [gdb knows it's a str[8] so chops it,
+    rather misleadingly!]
+  - 'whatis q' shows char *
+  - 'p q' shows the error:
+
+	$3 = 0x657265 <error: Cannot access memory at address 0x657265>
+
+- Ok, that's our first indication that something has gone wrong.
+
+- Use the '&' operator to print the memory address of the variables.
+  Observe that C has allocated the three variables consecutively:
+
+  - 'p &p'   shows:  $4 = (char **) 0x601058 <p>
+  - 'p &str' shows:  $5 = (char (*)[8]) 0x601060 <str>
+  - 'p &q'   shows:  $6 = (char **) 0x601068 <q>
+
+- Use 'x' to see a 'hexadecimal memory dump' of actual bytes at
+  some particular addresses.  This bizarre command:
+
+  (gdb) x/12c &str
+
+  means "print 12 bytes (chars) in hexadecimal starting at &str".
+  It generates:
+
+0x601060 <str>: 104 'h' 101 'e' 108 'l' 108 'l' 111 'o' 32 ' '  116 't' 104 'h'
+0x601068 <q>:   101 'e' 114 'r' 101 'e' 0 '\000'
+
+Aha! do you see the problem now?  str tried to grow larger than the space
+allocated to it (8 bytes) and it OVERFLOWED into q's space, which happened
+to be adjacent in memory.  It wrote the rest of the string ('e', 'r', 'e'
+and the trailing '\0') into q's value.
+
+But q is a char *, so interpreting those overflowing bytes as an address we get
+0x00657265 - what do you think is the hex code of the repeated byte 'e' btw?
+This is some arbitrary address in memory.  Surprisingly enough,
+that's not a valid char *!
+
+
+Finding the cause of the problem
+=================================
+
+- Now we know what's wrong, but in order to fix it we must know how did it
+  go wrong in the first place.
+
+- You can use gdb in (roughly) 3 different ways:
+
+- First, single step (commands 's' and 'n' - which single steps over a
+  function call) all the way though the program, printing out variables as
+  they change until you see when things go wrong.  This is slow and laborious.
+
+- Second, BISECT the problem: find a 'half way point' - estimate what function,
+  or line number, will be called/executed roughly "half way through" the
+  program run.
+  In this case, the "append" function is the obvious half way point.
+  Then set a breakpoint to stop execution there: Type 'break append'.
+  Run the program again with 'r'.
+  Print out the values on entry to append.
+  Then single step from there on until things go wrong.
+
+- Thirdly, you can 'watch' a variable that you are particularly interested
+  in - in this case q - so that execution stops whenever q is modified.
+
+- Let's try the 3rd tactic, as it seems focussed:
+
+(gdb) watch q
+Hardware watchpoint 1: q
+(gdb) r
+Old value = 0x0
+Hardware watchpoint 1: q
+New value = 0x601050 <str> ""
+0x000000000040059b in main () at eg.c:20
+
+Then "continue" running via the 'c' command:
+(gdb) c
+Old value = 0x601050 <str> "hello ther`"
+New value = 0x607265 <error: Cannot access memory at address 0x607265>
+
+- Use 'where' to check where we were when q was modified: in
+  append(str, "there").  But append() makes no deliberate modifications of q!
+  strcat() did the damage.
+
+
+Fixing the problem
+==================
+
+- In append(), you should check there's enough space left in str.
+  Something like this could work:
+
+bool append( char *str, char *app, int maxlen )
+{
+	if( (strlen(str) + strlen(app)) >= maxlen )
+	{
+		return false;	/* failure: not enough space */
+	}
+	strcat( str, app );
+	return true;
+}
+
+- Now you can check for errors back in main(). For example, using
+  assertions (remember to include assert.h):
+
+  assert( append(str, "there", STRSIZE) );
+
+- See eg-fixed.c for a version of eg.c that contains these fixes.
+
+- Compile that and run it (./eg-fixed) and it trips an assertion instead
+  of seg faulting.  Ok, it's still broken, much in a much cleaner way!
+
+- Now to really fix the problem: edit eg-fixed.c and change STRSIZE
+  from 8 to (say) 20, recompile (make) and rerun.  That was the ultimate
+  cause: not declaring str[] big enough to fit the string we wanted,
+  and also not bothering to check whether there was enough space.

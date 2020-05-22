@@ -1,0 +1,712 @@
+\documentclass[handout]{beamer}
+\usepackage{pgfpages}\pgfpagesuselayout{4 on 1}[a4paper,landscape,border shrink=5mm]
+
+\usepackage{xmpmulti,multimedia,xspace}
+\usepackage[latin1]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{shadows}
+\usetikzlibrary{positioning, arrows}
+\usetikzlibrary{decorations.fractals}
+\usepackage{anyfontsize}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\graphicspath{{./img/} }
+
+%\usetheme{Berlin}
+\usetheme{AnnArbor}
+
+
+\setbeamercovered{invisible}
+\setbeamersize{text margin left=7.5mm}
+\setbeamersize{text margin right=7.5mm}
+
+%==============================================================================
+
+\newcommand\RBox[1]{%
+%  \tikz\node[draw,rounded corners,align=center,] {#1};%
+  \tikz\node[draw,rounded corners,align=center,double copy shadow={opacity=0.3,shadow xshift=1ex,shadow yshift=-0.5ex,left color = brown!40,right color = magenta!80},left color=blue!50,right color=yellow!50 ] {#1};%
+}  
+
+\newcommand{\pitem}{\pause \item}
+
+\begin{document}
+\title{Building your own C Toolkit: Part 2}
+\author[Duncan White]
+{%
+   \texorpdfstring{
+        \begin{columns}
+            \column{.8\linewidth}
+            \centering
+            \RBox{Duncan C. White\\
+            \href{mailto:d.white@imperial.ac.uk}{d.white@imperial.ac.uk}}
+        \end{columns}
+   }
+   {Duncan C. White}
+}
+
+\institute[Imperial]{Dept of Computing, \\
+	Imperial College London}
+\date{22nd May 2020}
+
+%\begin{frame}
+%\titlepage
+%\end{frame}
+
+\begin{frame}[fragile]
+\vspace*{.3cm}\titlepage  
+\vspace*{.1cm}
+\centering 
+The handout and tarballs are available on CATE and at:
+\verb+  http://www.doc.ic.ac.uk/~dcw/c-tools-2020/lecture2/+
+\end{frame}
+
+%\section*{Outline}
+%\begin{frame}
+%\tableofcontents
+%\end{frame}
+
+\section{Today's Contents}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item
+      Last lecture, we introduced the idea of building a
+      \alert{C programming toolkit}.
+      and covered programmer's editors, make and multi-directory programs.
+
+    \pitem
+      Today, we're going to carry on, and cover:
+      \begin{itemize}
+      \item
+        \alert{What to do when things go wrong}.
+      \item
+        \alert{Debugging: gdb}.
+      \pitem
+        \alert{Detecting memory leaks: valgrind}.
+      \pitem
+        \alert{Profiling-led Optimization}.
+      \pitem
+        \alert{Automatic Ruthless Testing}.
+    \end{itemize}
+
+    %\pitem
+    %But first: one thing I didn't make clear last week was the
+    %destination of all our C Tools: the \verb+~/c-tools+ directory.
+    %This was explained in the first tarball's README.
+
+    \pitem
+    One of the most common things that you will experience with C programming
+    is that your program dies mysteriously with a \alert{Segmentation Fault} (aka a \alert{segfault}).
+    
+    \item
+    Why is that?
+
+    \pitem
+    \alert{Because C assumes you know what you're doing}!
+
+  \end{itemize}
+\end{frame}
+
+\section{What to do when things go wrong}
+\subsection{Segmentation Faults and other problems}
+
+\begin{frame}[fragile]
+
+  \begin{itemize}
+
+  \item
+  Or..
+
+  %\vspace{10pt}
+  \begin{center}
+  \includegraphics[width=0.5\textwidth]{img/cleanYourMess.jpeg}
+  \end{center}
+
+  \pitem
+  \alert{It's your responsibility} to: check that you don't overrun the
+  bounds of an array,
+  \pause
+  don't dereference a NULL/bad pointer,
+  \pause
+  and don't write into read-only memory - as in
+  \verb+char *p = "get ready"; *p = 's';+ or \verb+strcpy(p,"hello");+
+
+  \end{itemize}
+\end{frame}
+
+\section{Debugging}
+\subsection{Know a single debugger well (tarball 01.string-debug)}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+      \item
+      Our first technique for fixing a broken C program - when it crashes or produces
+      the wrong answers - is to \alert{debug it}.
+      \item
+      As the Pragmatic Programmers so nearly said: \alert{Know a single debugger well}.
+    \pause
+      \item
+      Let's use \alert{gdb}, the GNU debugger, to understand a problem in
+      \verb+01.string-debug+ - a program crashing with a segfault.
+    \pause
+      \item
+      The \verb+README+ in 01.string-debug explains what to do.  In summary:
+      \item
+      \alert{Recompile all source code with debugging support} - add gcc's
+      \alert{-g} flag to \verb+CFLAGS+ in the Makefile and type \verb+make clean all+.
+    \pause
+      \item
+      \alert{Start gdb} then run the program, interacting with it \alert{until it crashes}.
+      \item
+      Now type \verb+where+ to see
+      \alert{the call frame stack} - the sequence of
+      function calls leading to the crash.
+    \pause
+      \item
+      Then print out the values and types of variables to see what has gone wrong.
+      \item
+      The \verb+p VARIABLE+ command prints out a variable, and the
+      \verb+whatis VARIABLE+ command reminds you of it's type.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+      \item
+      In particular, you'll see that the char * variable \verb+q+ has a corrupt pointer in it:
+        \verb'p q' shows the error:
+	\verb+Cannot access memory at address 0x555500657265+
+
+      \pitem
+      Next, by printing the addresses of variables \verb+p, q+ and \verb+str+
+      (by commands like \verb+p &p+ etc), we see that \verb+q+
+      \alert{immediately follows} \verb+str+ in memory.
+
+      \pitem
+      We can then use gdb's \alert{memory dumper} to show us the chunk of memory
+      starting at \verb+&str+, using the fantastic \verb+x/12c &str+ command:
+
+	{\tiny
+	\begin{verbatim}
+0x555555755020 <str>:   104 'h' 101 'e' 108 'l' 108 'l' 111 'o' 32 ' '  116 't'104 'h'
+0x555555755028 <q>:     101 'e' 114 'r' 101 'e' 0 '\000'
+	\end{verbatim}
+	}
+
+      \item
+      Do you see the problem now?
+
+      \pause
+      str is a \alert{char [8]} but we have copied \verb+"hello there"+
+      into it - more than 8 chars,
+      \pause
+      so the rest of the string
+      ('e', 'r', 'e' and the trailing \verb+\0+)
+      has OVERFLOWED into the adjacent variable's space, which happens to be
+      \alert{q}.
+
+      \pitem
+      But q is a char *, so interpreting those overflowing bytes as an address we get
+      0x555500657265, some arbitrary address in memory.
+      Fortunately, that's not a valid char *, so dereferencing it gave our segfault.
+
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+      \item
+      To find out how the overflow occurred,
+      you can use gdb to set breakpoints, or watch a variable to stop the
+      debugging session each time it changes.
+
+      \pitem
+      Let's use the \verb+watch q+ command, and then run the program..
+      \pause
+      we find that q was modified accidentally inside \verb+append()+, specifically
+      where we strcat() without checking that the concatenated string
+      fits.
+
+      \pitem
+      The README file suggests an obvious two-part fix for the problem:
+      \begin{itemize}
+      \item
+      First, write additional code inside \verb+append()+ to detect overflow, and
+      use \verb+assert()+ to blow up the program when overflow does occur.
+      %- by passing in an additional parameter (the maximum size allocated to the string), checking it inside,
+      %and returning a success/failure boolean, and then we wrap the call to \verb+append+
+      %with an \verb+assert()+ to check that it succeeded,
+      \item
+      Second, prevent overflow from occurring this time - by
+      making \verb+char str[8]+ bigger!
+      \end{itemize}
+
+      \item
+      Google for \alert{gdb tutorial} or \alert{gdb cheatsheet} for more info.
+
+      \item
+      Most important, leave gdb by \verb+quit+.
+    \end{itemize}
+\end{frame}
+
+\section{Fixing memory leaks with valgrind}
+\subsection{(tarball 02.badhash)}
+
+\begin{frame}[fragile]
+    Memory leaks are the most serious C problem:
+    \begin{itemize}
+      \item
+      Often claimed that
+      \alert{99\% of serious C bugs are memory-allocation related}.
+      \item
+      C uses \alert{pointers and malloc()} so much, with
+      so little checking, that debugging memory related
+      problems can be challenging even with gdb.
+    \pause
+      \item
+      Failing to \alert{free() what you malloc()} is
+      very bad for long running programs, that
+      continuously \alert{modify their data structures}.
+    \pause
+      \item
+      Such programs can `leak' memory until they try to use more memory than
+      the computer has physical RAM!
+    \pause
+      \item
+      \alert{free()ing a block twice} is equally dangerous.
+    \pause
+      \item
+      \alert{Dereferencing} an uninitialized/reclaimed pointer
+      gives \alert{Undefined Behaviour} (really hard to debug!).
+    \pause
+      \item
+      Even when you get \alert{Seg faults} - \alert{gdb where} (frame stack)
+      may show it crashes in system libraries - but it doesn't really!
+    \end{itemize}
+    To diagnose such problems, we use tools like \alert{valgrind}:
+\end{frame}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+    \item
+      Suppose we have a \alert{pre-written, pre-tested}
+      hash table module, plus a unit test program {\bf testhash}.
+    \pitem
+      {\bf testhash} creates a single hash table, populates it with keys and values,
+      checks that we can find keys and their associated values, and
+      then iterates over the hash and checks that we see the correct
+      set of (key,value) pairs, then frees the hash table.
+    \pitem
+      The hash table module \alert{passes all tests}, and
+      we've even used it in several successful small projects,
+      where each project created a small number of \alert{longlived} hash tables
+      - so we feel pretty confident that it works!
+    %\item
+    %  But, for some reason,
+    %  \alert{we have never checked for memory leaks} with valgrind!
+    %  %Why not?
+    \pitem
+      Now, we intend to embed our hash table in a larger system,
+      we'll need to create, populate and destroy whole hash tables
+      \alert{thousands of times}.
+    \pitem
+      The voice of bitter experience: \alert{Test that scenario} before doing it:-)
+    \pause
+    \item
+      Write a new test program \verb+iterate N M+ that (silently)
+      performs all previous tests N times, sleeping M seconds afterwards.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+
+    \item
+      Runtime behaviour of \verb+iterate+ (with M=0) \alert{should be linear with N}.
+      Test it with \verb+time ./iterate N 0+ for several values of N.
+      %, graph results.
+    \pitem
+      However, we find \alert{some strange behaviour} around 24k
+      iterations on a 16GB lab machine (eg point07):
+      \pause
+      after a few seconds it crashes, saying \alert{Killed}.
+    \item
+      What's happening?
+    \pitem
+      Try monitoring with \verb+top+, sorting by \%age of memory used (run \verb+top -o %MEM+, or use a shell alias: \verb+alias memtop='top -o %MEM'+).
+    \pause
+    \item
+      Run iterate with a time delay: \verb+time ./iterate 24000 10+
+      while watching top!
+      \pause
+      iterate's memory use
+      \alert{grows rapidly}, we see it using 25\%, then 50\% of memory,
+      then (quite quickly) \alert{the process is killed}.
+      In the past, it behaved even worse - iterate used \alert{over 90\%}
+      of the memory, and caused the whole system to slow down.
+      %iterate took longer than expected,
+      %\alert{started swapping} (\%wait goes busy),
+      %the load average increases, and the whole system slowed down.
+    \pitem
+      Hypothesis: the hash table module is leaking some memory each iteration!
+      \pause
+      This is a job for valgrind!
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+    \item
+      Run \verb+valgrind ./testhash+ [back to the simpler test program]
+    \pitem
+      The result is:
+\begin{verbatim}
+ LEAK SUMMARY:
+    definitely lost: 520,528 bytes in 2 blocks
+ ...
+ Rerun with --leak-check=full to see details..
+\end{verbatim}
+    \pause
+    \item
+      Run \verb+valgrind --leak-check=full ./testhash+ and you see:
+
+\begin{verbatim}
+260,264 bytes in 1 blocks are definitely lost in loss record 1 of 2
+    at 0x4C2FB0F: malloc..
+    by 0x108F65: hashCreate (hash.c:73)
+    by 0x108C69: main (testhash.c:91)
+ 
+260,264 bytes in 1 blocks are definitely lost in loss record 2 of 2
+    at 0x4C2FB0F: malloc..
+    by 0x109059: hashCopy (hash.c:112)
+    by 0x108E4C: main (testhash.c:123)
+\end{verbatim}
+
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+    \begin{itemize}
+       \item
+       Look at line 73 of \verb+hash.c+ in \verb+hashCreate()+, it reads:
+
+\begin{verbatim}
+h->data = (tree *) malloc( NHASH*sizeof(tree) );
+\end{verbatim}
+       \item and line 112 is nearly identical in \verb+hashCopy()+.
+
+  \pitem
+  Now we have to think: Where might we expect to free this ``hash data"?
+  \pause
+  Look in the corresponding \verb+hashFree(hash h)+ function.
+
+  \pitem Aha!  \verb+h->data+ is NOT FREED.  A simple mistake!
+
+  \item Add the missing \verb+free(h->data)+, recompile (make).
+  \pitem Rerun \verb+valgrind ./testhash+ and it reports no leaking blocks.
+  \item Run \verb+./iterate 24000+ again - no non linear behaviour,
+  no weird slowdown.
+
+    \pause
+    \item
+      Summary: \alert{use valgrind regularly while developing your code}.
+      Save yourself loads of grief, double your confidence.
+    \item
+      Exercise: does the list example (in
+      Lecture 1's \alert{01.intlist} - or any of the later versions)
+      run cleanly with valgrind?
+    \end{itemize}
+\end{frame}
+
+\section{Profiling-led Optimization}
+\subsection{tarball 03.hash-profile}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+    \item
+      \alert{gcc} and most other C compilers can be asked to
+      \alert{optimize the code they generate}, gcc's options for this
+      are \alert{-O, -O2, -O3}.
+      Worth trying, rarely makes a significant difference.
+    \pause
+    \item
+      What makes far more difference is finding the \alert{hot spots}
+      using a \alert{profiler} and selectively optimizing them - by hand.
+      This can produce dramatic speedups, and profiling often (always?)
+      produces surprises.
+    \pause
+    \item
+      Let's use the \alert{Gnu profiler} to profile the bugfixed hash
+      module's \alert{iterate} test program
+      (in the \verb+03.hash-profile+ directory):
+      \begin{itemize}
+      \item
+        Add -pg to CFLAGS and LDLIBS in Makefile.
+      \item
+	Run \verb+make clean all+
+	(compile and link with \alert{-pg}, which generates instrumented
+        code which tracks function entry and exit times).
+      \item
+	Run \verb+make profile+ to generate a profile, this does 2 things:
+      \pitem
+	First, it runs \verb+./iterate 10000+, which runs slower than normal
+  	while profiling, and produces a binary profiling file
+	called \alert{gmon.out}.
+      \item
+        Second, \alert{gprof} then analyzes the executable and the
+        data file, producing a report showing the top 10 functions
+        (across all their calls) sorted by percentage of total runtime.
+      \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+    \item
+      \alert{head profile.orig} shows results like:
+\small
+\begin{verbatim}
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  us/call  us/call  name    
+ 30.67      0.72     0.72 650660000    0.00     0.00  free_tree
+ 28.11      1.38     0.66    10000    66.07    66.07  hashCreate
+ 18.74      1.82     0.44    20000    22.02    58.06  hashFree
+ 16.19      2.20     0.38    10000    38.04    53.05  hashCopy
+  6.39      2.35     0.15 325330000    0.00     0.00  copy_tree
+\end{verbatim}
+    \pitem
+    650 million calls to \alert{free\_tree()} and
+    325 million calls to \alert{copy\_tree()} are suspicious.
+    %\pause
+    First, 65066 is twice 32533!
+    Does 32533 mean anything?  Does it appear in the code?
+    \pause
+    Aha! the hash table's \alert{dynamic array of binary trees}
+    has 32533 entries.
+    \pitem
+    \alert{hashFree()} and \alert{hashCopy()} have the same
+    structure, iterating over the array of trees
+    making one call to \alert{free\_tree()/copy\_tree()} per tree.
+    The \alert{vast majority} of these trees are \alert{NULL}.
+    Both \alert{free\_tree()} and \alert{copy\_tree()} return immediately
+    if the tree is NULL.
+    \pause
+    How long do hundreds of millions of calls, which immediately return, take?
+
+    \pitem
+    We can \alert{double the speed} of \alert{iterate} by adding
+    \verb+if( h->data[i] != NULL )+ conditions on tree calls
+    in \alert{hashFree()} and \alert{hashCopy()}
+    \pause
+    Then profile again, a new hotspot may appear.
+    \pitem
+    We might also consider \alert{shrinking the size of the array}
+    to some smaller prime number.
+    %\pause
+    %More radically, \alert{dynamically resize} the array (and rehash all the keys) when the hash gets too full.
+    \end{itemize}
+\end{frame}
+
+\section{Testing}
+\subsection{Test Early, Test Often, Test Automatically (PP Tip 62)}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+      \item
+	Pragmatic Programmers Tip 62:
+\begin{quote}
+Test Early, Test Often, Test Automatically:
+
+Tests that run with every build are much more
+effective than test plans that sit on a shelf.
+\end{quote}
+    \pause
+    \item
+      Test \alert{ruthlessly} and \alert{automatically}
+      by building \alert{unit test} programs (one per module) plus
+      \alert{integration} tests which test a set of modules together,
+      and \alert{overall} program tests.
+    \item
+      Add \alert{make test} target to run the tests.
+      Run them frequently.
+    \item
+      Can run \alert{make test}
+      whenever you commit a new version into git!
+    \pitem
+      {\bf Most important}:
+      Test programs should check for correct results themselves
+      (essentially, hardcoding the correct answers in them).
+    \pitem
+      If your ``test program" simply prints lots of messages out
+      and relies on a human being to read the output, it's
+      {\bf not a proper test program}.
+
+    \pitem
+      Helpful if all tests report in a common style.
+      C doesn't come with a testing infrastructure like Java's jUnit,
+      but it's pretty easy to whip something simple up.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+      \item
+      For example:
+
+{\small
+\begin{verbatim}
+void testbool( bool ok, char *testname )
+{
+        printf( "T %s: %s\n", testname, ok?"OK":"FAIL" );
+}
+\end{verbatim}
+}
+	\item
+	\verb+testbool()+ can be used via:
+
+{\small
+\begin{verbatim}
+	intlist l = intlist_nil();
+	testbool( intlist_kind( l ) == intlist_is_nil,
+	     "kind(nil) is nil" );
+
+	l = intlist_cons( 100, l );
+	testbool( intlist_kind( l ) == intlist_is_cons,
+	     "kind([100]) is cons" );
+\end{verbatim}
+}
+
+      \item
+      This produces output of the form:
+{\small
+\begin{verbatim}
+T kind(nil) is nil: OK
+T kind([100]) is cons: OK
+\end{verbatim}
+}
+
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+      \item
+      \alert{make test} could run all test programs in sequence:
+\begin{verbatim}
+test:   testprogram1 testprogram2 ...
+        ./testprogram1
+        ./testprogram2
+\end{verbatim}
+
+      \item
+      Or, given the above fixed test output format, we could post-process
+      the output in the \verb+make test+ rule:
+\begin{verbatim}
+        ./testprogram1 | grep ^T
+        ./testprogram2 | grep ^T
+\end{verbatim}
+
+      \item
+      Or we could invoke a simple
+      test framework script with testprograms as arguments,
+      which runs the programs and post-processes the results.  eg:
+
+\begin{verbatim}
+test:   testprogram1 testprogram2 ...
+        summarisetests ./testprogram1 ./testprogram2
+\end{verbatim}
+
+      \item
+      You'll find such a \alert{summarisetests} Perl script,
+      and \verb+testbool()+ in it's own \alert{testutils} module
+      in the \verb+04.testutils+ directory.  Go in there and type
+      \verb+make install+, then enter \verb+05.intlist-with-testing+ to see
+      \alert{intlist} with testing.
+
+    \end{itemize}
+\end{frame}
+
+\section{Testing}
+\subsection{Test Driven Development}
+
+\begin{frame}[fragile]
+
+      \alert{Test Driven Development (TDD)} writes the
+      test programs \alert{before} implementing the feature
+      to test.
+
+\begin{columns}
+\column{0.4\textwidth}
+
+    \pause
+    \begin{itemize}
+      \item This helps you focus on one task at a time.
+      \item Encourages incremental development.
+      \item Reduces debugger use.
+      \item (When you find - and fix - a new bug, write a test for it!)
+      \item Don't forget to add some overall tests too.
+    \end{itemize}
+
+\column{0.6\textwidth}
+
+	\begin{center}
+	\definecolor{darkgreen}{RGB}{50,200,10}
+	\begin{tikzpicture}
+	\tikzstyle{bx}=[draw, rectangle, rounded corners=0.1cm, node distance=1.2cm, text width=3.1cm]
+	\tikzstyle{to}=[>=stealth',shorten >=1pt,semithick,font=\sffamily\footnotesize]
+	\tikzstyle{ar}=[>=latex, ultra thick, shorten <= 2pt, shorten >= 0pt]
+
+	\uncover<3->{
+	\node[bx] (add) at (0,0) {Add a test};
+	\node[draw, circle, radius=1pt, fill=black] (start) [left=0.7cm of add] {};
+	\draw[to, ->] (start) -- (add);
+	}
+
+	\uncover<4->{
+	\node[bx] (run) [below=0.8cm of add] {Compile and run};
+	\draw[to, ->] (add) -- (run);
+	\draw[ar, darkgreen, ->] (run.east) -- ++(10pt, 0pt) -- node[midway, right, black] {pass} ++(0cm,1cm) |- (add.east);
+	}
+
+	\uncover<5->{
+	\node[bx] (write) [below=0.8cm of run] {Write code to pass the test};
+	\draw[ar, red, ->] (run.south) -- node[midway, right, black] {fail} (write);
+	}
+
+	\uncover<6->{
+	\node[bx] (rerun) [below=0.8cm of write] {Compile and re-run};
+	\draw[to, ->] (write) -- (rerun);
+	\draw[ar, red, ->] (rerun.east) -- ++(10pt, 0pt) -- node[midway, right, black] {fail} ++(0cm,1.5cm) |- (write.east);
+	}
+
+	\uncover<7->{
+	\draw[ar, darkgreen, ->] (rerun.west) -- ++(-10pt, 0pt) -- node[midway, left, black] {pass} ++(0cm,4.2cm) |- (add.west);
+	}
+
+	%\uncover<7->{
+	%\node[bx] (refactor) [below=0.8cm of rerun] {Refactor the code};
+	%\draw[ar, darkgreen, ->] (rerun.south) -- node[midway, right, black] {pass} (refactor);
+	%\draw[to, ->] (refactor.west) -- ++(-10pt, 0pt) |- (add.west);
+	%}
+	\end{tikzpicture}
+	\end{center}
+
+\end{columns}
+
+    \pause
+    \pause
+    \pause
+    \pause
+    \pause
+    \pause
+    \vspace{10pt}
+    I recommend giving TDD a try, but I'm still concerned as to where
+    the overall design comes in.
+    Rob Chatley will cover TDD in
+    Software Engineering Design next year.
+
+\end{frame}
+
+
+\end{document}

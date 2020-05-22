@@ -1,2 +1,7 @@
+CC = gcc
+CFLAGS = -Wall -Wextra -g -pedantic
+
 bits: bits.c
-	gcc bits.c -Wall -Wextra -g -pedantic -o bits
+
+clean:
+	rm -f bits *.o *~ callgrind.out.*

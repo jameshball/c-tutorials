@@ -1,0 +1,212 @@
+Profiling and optimizing
+========================
+
+- Following on from our work in 02.badhash, now the hash table doesn't leak
+  memory, but it has never been profiled.  Let's use the Gnu profiler,
+  gprof, to see where the bottlenecks are and optimize them.
+
+- Start by adding the '-pg' flag to the CFLAGS and LDLIBS variables in the
+  Makefile, to make sure everything is compiled and linked with profiling
+  enabled.
+
+- Rebuild the program via
+
+	     make clean all
+
+- run time ./iterate 10000
+
+- it runs as normal, but a bit slower than normal
+  [profiling has to slow it down a bit!],
+  this also produces gmon.out binary data file
+  (do NOT view it with less:-))
+
+- produce profiling report by:
+
+  gprof ./iterate gmon.out > profile.orig
+
+  You can get gprof to produce just the flat profile table by:
+
+  gprof -b --flat-profile ./iterate
+
+- the flat profile table at the top of gprof's output shows you
+  something like the following:
+
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  us/call  us/call  name    
+ 23.74      0.68     0.68    20000    34.07    64.89  hashFree
+ 21.65      1.30     0.62    10000    62.13    62.13  hashCreate
+ 21.47      1.92     0.62 650660000     0.00     0.00  free_tree
+ 16.41      2.39     0.47    10000    47.10    81.67  hashCopy
+ 12.05      2.74     0.35 325330000     0.00     0.00  copy_tree
+  3.32      2.83     0.10                             foreach_tree
+  1.57      2.88     0.05    90000     0.50     0.50  tree_op
+  ....
+
+- This shows that "iterate 10000" spent:
+  - 23.75% of the total run-time (T.R.T) of the program in hashFree(),
+    called 20,000 times, ie. freeing 20000 hashes.
+  - 21.65% of the TRT in hashCreate() - creating 10000 hashes
+  - another 21.47% in free_tree(), freeing 650 MILLION hash trees,
+  - and another 16.41% in hashCopy() - copying 10000 hashes.
+  - and so on down into lesser fry.
+
+- If you view the source of iterate.c, you'll see that iterate 10000 is
+  essentially:
+
+	for( i=0; i<10000; i++ )
+	{
+		- create a hash
+		- populate it with some key,value pairs
+		- copy it.
+		- tweak the original and the copy a bit more.
+		- free the original
+		- free the modified copy.
+	}
+
+  so that explains when 10K hashes are created, 10K are copied, and 20K
+  are freed (each original hash AND each copied hash).
+
+- If you view the source code of hash.c, you'll find that free_tree() is only
+  called by hashFree() - ignoring recursive calls free_tree() makes to itself -
+  so overall freeing 20K hashes took 21.47% + 23.75%: over 45% of the total
+  run-time.
+
+- Similarly, copy_tree() is only called by hashCopy(), so copying 10K
+  hashes took 16.41% + 12.05%: over 28% of the total run-time.
+
+- So I'd actually describe our program's run-time as:
+
+  45% of the TRT freeing 20K hashes.
+  28% of the TRT copying 10K hashes to give another 10K hashes.
+  21% of the TRT creating 10K hashes.
+
+- Next, we see two ridiculously large numbers that jump out at us:
+
+  650 MILLION calls to free_tree(), and 325 MILLION calls to copy_tree(),
+  between them taking 21.47% + 12.05%: over 36%.
+
+- We can't help but notice that 650 is twice 325, and 20K is twice 10K.
+  325 seems to be a special magic number in the hash table, it must mean
+  something.  It's not random!  Now, it could be very complex.  But what
+  if it's simple?  Try:
+
+  grep 325 hash.c
+
+  what have we got to lose if it reports nothing?
+  
+- But oh look, it reports a palpable hit (as Sherlock Holmes might say):
+
+  #define NHASH   32533
+
+  How is NHASH used in hash.c?  What are the data structures?   Explore and
+  you'll see that a hash table is implemented as an array of NHASH sorted
+  binary trees of (key,value) pairs.  Often hash tables are implemented as
+  an array of sorted linked lists of (key,value) pairs, but a binary search
+  tree is more efficient than a sorted linked list.
+
+  hashFree, hashCopy and (in fact) hashForeach all have a common structure,
+  as this extract from hashCopy shows:
+
+	for( i = 0; i < NHASH; i++ )
+	{
+		result->data[i] = copy_tree( h->data[i], h->c );
+	}
+
+  ie. they call their helper functions (here copy_tree(), but hashFree()
+  calls free_tree() and hashForeach() calls foreach_tree()) once per tree,
+  NHASH of them.
+
+- Those helpers immediately return if the tree is empty, ie they each
+  start: return null if t == null.
+
+- In the context of our test program iterate, 99.9% of our trees are empty.
+
+- So, iterating over 32533 trees per hash x 10000 hashes gives us 325 million
+  calls to copy_tree(), and of course we free every hash that we create or
+  copy - so 20000 hashes in total, giving 32533 trees per hash x 20000 hashes =
+  650 million calls to free_tree().
+  
+- The vast majority of those 1 billion calls (325+650 million) - far more than
+  99% of them - will be for empty binary trees, so the vast majority of
+  free_tree() and copy_tree() calls will immediately return.
+
+- how long do nearly one billion function calls, 99.9% of which
+  follow the "return null if t == null" path immediately, take?
+
+- so I changed the call to free_tree(t) in hashFree() to
+	"if( t != null ) free_tree(t)"
+  and made analagous changes to hashCopy() and hashForeach().
+
+- patch.optimize is the diff -Naur (patch-format) output showing the
+  changes I made.  3 tiny trivial changes!
+
+- recompile; rerun; reprofile:
+
+  make
+  ./iterate 10000
+  gprof -b --flat-profile ./iterate > profile.optimized
+
+- program runs MORE THAN TWICE AS FAST overall!
+
+- optimized profile reveals:
+
+%   cumulative   self              self     total           
+time   seconds   seconds    calls  us/call  us/call  name    
+46.73      1.18     1.18    20000    59.12    59.12  hashFree
+28.91      1.91     0.73    10000    73.15    73.15  hashCreate
+24.56      2.54     0.62    10000    62.12    62.12  hashCopy
+
+- we've roughly doubled the speed of hashFree() and hashCopy(), and
+  now the helpers aren't significant enough to be shown separately.
+
+- hashCreate() and hashCopy() now take similar amounts of time; previously
+  hashCopy() was 2.5 times slower than hashCreate().
+
+
+The Important Point
+===================
+
+**Noone**, not even the author of the hash.c code (i.e. me), would have
+predicted **in advance** that adding three tiny "if t != NULL" wrappers
+to 3 particular functions would **DOUBLE the speed** of the hash table -
+at least as it is exercised by iterate.c.
+
+So we should conclude that: NOONE EVER UNDERSTANDS THE RUN-TIME BEHAVIOUR OF
+THEIR OWN PROGRAMS, LET ALONE ANYONE ELSE'S!
+
+
+Extra
+=====
+
+- Further profiling-led optimizations might include reducing the
+  number of trees (NHASH) to some smaller prime number, investigating
+  how well the keys are spread among the trees.  Reduce NHASH too far
+  and hash keys may start to cluster in particular trees which become
+  too deep and unbalanced.
+
+- Is a tree rebalancer worth writing?  If so, when it is worth invoking?
+  Similarly, would a dynamic "array resize and all-key rehash" ever be
+  worthwhile?
+
+- Note that several of these investigations may require storing a more
+  realistic number of (key,value) pairs in the various hash tables.  Can
+  we obtain a realistic (key,value) pair dataset from somewhere?  How about:
+
+  Key: each word in /usr/share/dict/words.
+  Value: the same as the key:-)
+        or perhaps a string the same length as the key, but comprising the
+	sorted bag of letters in the key, as in "duncan" contains the letters
+	"acdnnu" in sorted order, this gives you an excuse to play with
+	qsort() to generate the values:-)
+
+- Write a new test program that builds a single hash in this fashion, and
+  then copies it N times, and perhaps traverses each copy via hashForeach(),
+  and then frees all N+1 hashes.  Note that one of our earlier examples
+  contained code to read every word from /usr/share/dict/words and compute
+  some properties of the whole dictionary, so grab chunks of code and reuse
+  them:-)  In fact, calculate the same properties again!
+
+- Then profile that!  Further surprises will almost certainly await!

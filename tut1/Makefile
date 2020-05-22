@@ -1,2 +1,7 @@
+CC = gcc
+CFLAGS = -g -Wall -Wextra -pedantic
+
 main: main.c
-	gcc main.c -g -Wall -Wextra -pedantic -o main
+
+clean:
+	rm -f main *.o *~ callgrind.out.*

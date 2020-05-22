@@ -1,0 +1,53 @@
+--- hash.c-ORIG	2017-07-03 19:14:21.546623748 +0100
++++ hash.c-PATCHED	2017-07-03 19:13:14.100765482 +0100
+@@ -94,8 +94,11 @@
+ 
+ 	for( i = 0; i < NHASH; i++ )
+ 	{
+-		free_tree( a->data[i], a->f );
+-		a->data[i] = NULL;
++		if( a->data[i] != NULL )
++		{
++			free_tree( a->data[i], a->f );
++			a->data[i] = NULL;
++		}
+ 	}
+ }
+ 
+@@ -116,7 +119,11 @@
+ 
+ 	for( i = 0; i < NHASH; i++ )
+ 	{
+-		result->data[i] = copy_tree( h->data[i], h->c );
++		result->data[i] = NULL;
++		if( h->data[i] != NULL )
++		{
++			result->data[i] = copy_tree( h->data[i], h->c );
++		}
+ 	}
+ 
+ 	return result;
+@@ -132,7 +139,10 @@
+ 
+ 	for( i = 0; i < NHASH; i++ )
+ 	{
+-		free_tree( h->data[i], h->f );
++		if( h->data[i] != NULL )
++		{
++			free_tree( h->data[i], h->f );
++		}
+ 	}
+ 	free(h->data);
+ 	free( (hashvalue) h );
+@@ -188,7 +198,10 @@
+ 
+ 	for( i = 0; i < NHASH; i++ )
+ 	{
+-		foreach_tree( a->data[i], cb, arg );
++		if( a->data[i] != NULL )
++		{
++			foreach_tree( a->data[i], cb, arg );
++		}
+ 	}
+ }
+ 

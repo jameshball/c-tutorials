@@ -1,0 +1,28 @@
+This is the CMake example from lecture 1, with added testing.
+
+Testing inside CMake
+====================
+
+- Unlike Make, CMake does have some support for specialised testing.
+  Start by enabling testing at the beginning of your CMakeLists.txt:
+
+  enable_testing()
+
+- Use the function add_test() to add as many test targets as you like.
+  You can set the pass/fail conditions separately for each test (by
+  default based on whatever the test sends to stdout). For example:
+
+    add_test(myTest testlist)
+    set_tests_properties(myTest PROPERTIES FAIL_REGULAR_EXPRESSION "fail")
+
+- UNFORTUNATELY, as far as I can determine, CMake assumes that each test
+  program contains a SINGLE TEST.  Unfortunately, testlist.c contains MANY
+  sequential tests, each with it's own success/failure output, and this
+  confuses CMake.  I guess you'd have to split testlist.c into multiple
+  pieces - and as the tests are sequential, relying on what's been built
+  up before, each successive test program would contain a longer setup
+  preamble before the single test.  That sucks so I don't recommend it!
+
+- After CMake-ing, you can run 'make test' and it will run all your tests
+  and give you a test report including real-time progress, total
+  execution time and failed tests.

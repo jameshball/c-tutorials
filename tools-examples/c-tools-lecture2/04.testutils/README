@@ -1,0 +1,6 @@
+04.testutils
+
+- summarisetests and a trivial bool checking testutils.h/testutils.c module
+
+- go in here and "make install" otherwise later examples
+  will not work.

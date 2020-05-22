@@ -1,0 +1,57 @@
+Define	hash.c	47
+Miterate	iterate.c	/^int main( int argc, char **argv )$/
+Mtesthash	testhash.c	/^int main( int argc, char **argv )$/
+NHASH	hash.c	23
+Search	hash.c	47
+c	hash.c	33
+copy_tree	hash.c	/^static tree copy_tree( tree t, hashcopyfunc c )$/
+count_cb	hash.c	/^static void count_cb( hashkey k, hashvalue v, void/
+data	hash.c	30
+depth_tree	hash.c	/^static int depth_tree( tree t )$/
+dump_cb	hash.c	/^static void dump_cb( hashkey k, hashvalue v, void /
+dumparg	hash.c	206
+each_cb	testhash.c	/^static void each_cb( hashkey k, hashvalue v, hashv/
+f	hash.c	32
+foreach_tree	hash.c	/^static void foreach_tree( tree t, hashforeachcbfun/
+free_tree	hash.c	/^static void free_tree( tree t, hashfreefunc f )$/
+freevalue	hash.c	/^static void freevalue( hashfreefunc f, hashvalue v/
+h1	iterate.c	34
+h1	testhash.c	34
+hashCopy	hash.c	/^hash hashCopy( hash h )$/
+hashCreate	hash.c	/^hash hashCreate( hashprintfunc p, hashfreefunc f, /
+hashDump	hash.c	/^void hashDump( FILE *out, hash a )$/
+hashEmpty	hash.c	/^void hashEmpty( hash a )$/
+hashFind	hash.c	/^hashvalue hashFind( hash a, hashkey k )$/
+hashForeach	hash.c	/^void hashForeach( hash a, hashforeachcbfunc cb, vo/
+hashFree	hash.c	/^void hashFree( hash h )$/
+hashIsEmpty	hash.c	/^int hashIsEmpty( hash h )$/
+hashMembers	hash.c	/^int hashMembers( hash h )$/
+hashMetrics	hash.c	/^void hashMetrics( hash h, int *min, int *max, doub/
+hashPresent	hash.c	/^int hashPresent( hash a, hashkey k, hashvalue *v )/
+hashSet	hash.c	/^void hashSet( hash a, hashkey k, hashvalue v )$/
+hash_s	hash.c	29
+k	hash.c	37
+left	hash.c	39
+lookuptest	testhash.c	/^void lookuptest( int x1, int x2, int x3, int x4, i/
+max	hash.c	/^#define max(a,b)  ((a)>(b)?(a):(b))$/
+myCopyValue	iterate.c	/^static hashvalue myCopyValue( hashvalue v )$/
+myCopyValue	testhash.c	/^static hashvalue myCopyValue( hashvalue v )$/
+myFree	iterate.c	/^static void myFree( hashvalue v )$/
+myFree	testhash.c	/^static void myFree( hashvalue v )$/
+myPrint	iterate.c	/^void myPrint( FILE *out, hashkey k, hashvalue v )$/
+myPrint	testhash.c	/^void myPrint( FILE *out, hashkey k, hashvalue v )$/
+onerun	iterate.c	/^void onerun( void )$/
+out	hash.c	206
+p	hash.c	31
+p	hash.c	206
+right	hash.c	40
+set	iterate.c	/^void set( hash h, hashkey k, char *v )$/
+set	testhash.c	/^void set( hash h, hashkey k, char *v )$/
+shash	hash.c	/^static int shash( char *str )$/
+talloc	hash.c	/^static tree talloc( hashkey k, hashvalue v )$/
+test	testhash.c	/^void test( hashkey k, int expected )$/
+tree	hash.c	26
+tree_op	hash.c	/^static tree tree_op( hash a, hashkey k, hashvalue /
+tree_operation	hash.c	47
+tree_s	hash.c	36
+v	hash.c	38

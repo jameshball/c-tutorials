@@ -1,0 +1,39 @@
+C Tools Lecture 2 Materials
+
+You should ALREADY have
+
+export TOOLDIR=$HOME/c-tools
+export PATH="$TOOLDIR/bin:$TOOLDIR/bin/$ARCH:$PATH"
+export MANPATH=${MANPATH}:$TOOLDIR/man
+
+at the end of your ~/.bashrc from Lecture 1.
+
+Sequence through the following directories,
+following the instructions in each directory's README.
+
+- 01.string-debug:
+	- using gdb to debug some dodgy C code that segmentation faults
+	  when we run it.
+
+- 02.badhash
+	- large-scale memory leak bug.
+	- investigate and understand the bizarre behaviour.
+
+- 03.hash-profile
+	- profile the bugfixed hash module with gprof
+	  and see what surprises await.
+	- a simple optimization suggested by the gprof
+	  report DOUBLES the speed of the hash module.
+	- and that's not a put up job, I've been using
+	  the hash module for years w/o profiling it!
+
+- 04.testutils
+	- summarisetests and a trivial bool checking testutils.h
+	- go in there and "make install" otherwise later examples
+	  will not work.
+
+- 05.intlist-with-testing
+	- our old intlist example, with added testing
+
+- 06.cmake-testing
+	- an attempt to do testing via CMake, not entirely successfully:-)

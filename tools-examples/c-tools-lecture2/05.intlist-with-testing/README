@@ -1,0 +1,7 @@
+- Here's our usual list-of-integers module example, with a separate lib
+  directory.
+
+- in this version, the Makefiles have "make test" targets that conspire
+  to run ./lib/testlist and pipe the output through summarisetests, and the
+  lib/testlist.c has been modified to use the testutils.h testTYPE() function.
+
