@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include "pointer_arithmetic.h"
 
 char* create_command(size_t size) {
   char* command = calloc(size, sizeof(char));
@@ -27,6 +28,13 @@ char* get_command(size_t size) {
   char* command = create_command(size);
   fgets(command, size, stdin);
 
+  for (int i = 0; command[i] != '\0'; i++) {
+    if (command[i] == '\n') {
+      command[i] = '\0';
+      break;
+    }
+  }
+
   return command;
 }
 
@@ -42,7 +50,7 @@ char** get_commands(int n, size_t size) {
 
 void print_commands(char **commands, int n) {
   for (int i = 0; i < n; i++) {
-    printf("%s", commands[i]);
+    printf("%s\n", commands[i]);
   }
 }
 
@@ -62,5 +70,7 @@ int main(int argc, char **argv) {
 
   char** commands = get_commands(n, size);
   print_commands(commands, n);
+  print_command_lengths(commands, n);
+  print_command_concat(commands, n);
   free_commands(commands, n);
 }
